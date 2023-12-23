@@ -11,7 +11,6 @@ let users = [];
 
 const uploadDirectory = path.join(__dirname, '../public/uploads');
 
-//multer sortu eta fitxategia non gordetzen den eta zer izenekin gordetzen den aldatzeko multer.diskStorage funtzioa erabili.
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -26,17 +25,16 @@ const storage = multer.diskStorage({
   })
   
   const imageTypes=['.png','.jpg'];
-  //image/png mimetype-a duten fitxategiak bakarrik onartuko dira. (hau da, PNG formatukoak bakarrik onartuko dira)
+
   const fileFilter = (req, file, cb) => {
-    if (imageTypes.includes(path.extname(file.originalname).toLocaleLowerCase())) { // Fitxategiaren mota onartuak badira
+    if (imageTypes.includes(path.extname(file.originalname).toLocaleLowerCase())) { 
       cb(null, true);
     } else {
       cb(new Error('Extensioa ez da onartzen. Soilik .png edo .jpg formatuko fitxategiak onartzen dira.'), false);
     }
   };
 
-  //upload aldagaian storage geneukagun definitua eta orain fitxategien tamaina limitea eta fitxategien mota ere definitu ditugu
-  //limits eta fileFilter aldagaiekin.
+
   const upload = multer({
   storage: storage,
   limits: {
@@ -44,11 +42,6 @@ const storage = multer.diskStorage({
   },
   fileFilter: fileFilter,
 });
-
-//HEMENDIK AURRERA MONGO DB ERABILIKO DUGU.
-
-
-
 
 
 db.bezeroak.find( function (err, userdocs){
@@ -80,7 +73,7 @@ router.post("/new", upload.single('avatar'), (req, res) => {
     izena: req.body.izena,
     abizena: req.body.abizena,
     email: req.body.email,
-    avatar: imagen, // user-ari gehitu fitxategiaren izena
+    avatar: imagen, 
   };
 
   users.push(user);

@@ -7,7 +7,6 @@ let updateUser = (id, currentAvatar) => {
 
   let avatarFileName = avatarInput ? avatarInput : (currentAvatar || '');
   
-  // Crear FormData con los datos a enviar
   let formData = new FormData();
   formData.append('id', id);
   formData.append('izena', izena);
@@ -15,16 +14,15 @@ let updateUser = (id, currentAvatar) => {
   formData.append('email', email);
   formData.append('avatar', avatarFileName);
   
-    // Realizar la llamada a fetch solo si se selecciona un nuevo archivo
     fetch(`/users/update/${id}`, {
       method: 'PUT',
       body: formData,
     })
       .then(response => response.json())
       .then(data => {
-        console.log(data);  // Manejar la respuesta o realizar acciones adicionales si es necesario
+        console.log(data);  
 
-        // Actualizar todos los campos en la fila con los nuevos datos
+
         row.innerHTML = `
           <th scope="row">${id}</th>
           <td><img src="/uploads/${data[0].avatar}" alt="Avatar" style="width: 50px; height: 50px;"></td>
@@ -64,10 +62,9 @@ var tableBody = document.getElementById("userTableBody");
 
 // Loop through each user in the JSON array
 
-// Verificar si hay un avatar, si no, usar la imagen predeterminada
+
 const avatarSrc = `/uploads/${user.avatar || 'avatar-1703351104274-910967901.png'}`;
 
-// Create a new row and set its innerHTML based on the user data
 var newRow = tableBody.insertRow();
 newRow.setAttribute("id", user._id);
 
@@ -116,7 +113,6 @@ document.addEventListener("DOMContentLoaded", function () {
 document.getElementById("formularioa").addEventListener("submit", (e) => {
   e.preventDefault();
   
-  // FormData motako objektu bat sortu fitxategien karga eta beste datuak kudeatzeko
   let formData = new FormData(e.target);
 
 
