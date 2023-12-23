@@ -1,9 +1,63 @@
 var express = require('express');
 var router = express.Router();
 
-let users = [
-  {id: Date.now(), izena: "John", abizena: "Doe", email: "john@doe.com"},
-];
+const mongojs = require('mongojs');
+const db = mongojs('bezeroakdb', ['bezeroak']); 
+
+const path = require('path');
+const multer  = require('multer')
+
+let users = [];
+
+const uploadDirectory = path.join(__dirname, '../public/uploads');
+
+//multer sortu eta fitxategia non gordetzen den eta zer izenekin gordetzen den aldatzeko multer.diskStorage funtzioa erabili.
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, uploadDirectory)
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+      const fileExtension = path.extname(file.originalname);
+      const finalFileExtension=file.fieldname + '-' + uniqueSuffix + fileExtension; // Obtener la extensión del archivo original
+      cb(null,finalFileExtension);
+    }
+  })
+  
+  const imageTypes=['.png','.jpg'];
+  //image/png mimetype-a duten fitxategiak bakarrik onartuko dira. (hau da, PNG formatukoak bakarrik onartuko dira)
+  const fileFilter = (req, file, cb) => {
+    if (imageTypes.includes(path.extname(file.originalname).toLocaleLowerCase())) { // Fitxategiaren mota onartuak badira
+      cb(null, true);
+    } else {
+      cb(new Error('Extensioa ez da onartzen. Soilik .png edo .jpg formatuko fitxategiak onartzen dira.'), false);
+    }
+  };
+
+  //upload aldagaian storage geneukagun definitua eta orain fitxategien tamaina limitea eta fitxategien mota ere definitu ditugu
+  //limits eta fileFilter aldagaiekin.
+  const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 2*1024*1024,
+  },
+  fileFilter: fileFilter,
+});
+
+//HEMENDIK AURRERA MONGO DB ERABILIKO DUGU.
+
+
+
+
+
+db.bezeroak.find( function (err, userdocs){
+  if (err) {
+    console.log("Error: " + err);
+  } else {
+    users = userdocs;
+  }
+});
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -18,22 +72,78 @@ router.get('/list', function(req, res, next) {
   });
 
 
-router.post("/new", (req, res) => {
-  users.push(req.body);
-  res.json(users);
+router.post("/new", upload.single('avatar'), (req, res) => {
+
+  let imagen = req.file ? req.file.filename : 'avatar-1703351104274-910967901.png';
+
+  const user = {
+    izena: req.body.izena,
+    abizena: req.body.abizena,
+    email: req.body.email,
+    avatar: imagen, // user-ari gehitu fitxategiaren izena
+  };
+
+  users.push(user);
+
+  db.bezeroak.insert(user, function (err, user){
+    if (err) {
+      console.log("Error: " + err);
+    } else {
+      console.log("Inserted: " + user);
+      res.json(user);
+    }
+  });
 });
+
 
 router.delete("/delete/:id", (req, res) => {
-  users = users.filter(user => user.id != req.params.id);
+  users = users.filter(user => user._id != req.params.id);
+  // remove user from mongo
+  db.bezeroak.remove({_id: mongojs.ObjectId(req.params.id)}, function (err, user){
+    if (err) {
+      console.log("Error: " + err);
+    } else {
+      console.log("Removed: " + user);
+    }
+  });
   res.json(users);
 });
 
-router.put("/update/:id", (req, res) => {
-  let user = users.find(user => user.id == req.params.id);
+
+router.put("/update/:id", upload.single('avatar'), (req, res) => {
+  let user = users.find(user => user._id == req.params.id);
   user.izena = req.body.izena;
   user.abizena = req.body.abizena;
   user.email = req.body.email;
+
+  if (req.file) {
+    user.avatar = req.file.filename;
+  db.bezeroak.update({_id: mongojs.ObjectId(req.params.id) },
+  { $set: {izena: req.body.izena, abizena: req.body.abizena, email: req.body.email, avatar: user.avatar} },
+  function (err, updatedUser){
+    if (err) {
+      console.log("Error: " + err);
+    } else {
+      console.log("Updated: " + updatedUser);
+    }
+  });
+
   res.json(users);
+}else{
+  user.avatar="avatar-1703351104274-910967901.png";
+  db.bezeroak.update({_id: mongojs.ObjectId(req.params.id) },
+  { $set: {izena: req.body.izena, abizena: req.body.abizena, email: req.body.email, avatar: user.avatar} },
+  function (err, updatedUser){
+    if (err) {
+      console.log("Error: " + err);
+    } else {
+      console.log("Updated: " + updatedUser);
+    }
+  });
+
+  res.json(users);
+}
 })
+
 
 module.exports = router;
